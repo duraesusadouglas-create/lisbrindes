@@ -372,6 +372,11 @@ header{background:var(--w);border-bottom:2px solid var(--blue);position:sticky;t
       <div class="panel-section" id="panel-storeSettings">
         <h2>🎨 Personalizar Loja</h2>
         <p class="panel-sub">Mude as cores, textos e informações da sua loja.</p>
+        <!-- TEMAS -->
+        <div style="margin-bottom:24px">
+          <label style="font-size:1rem;font-weight:700;color:var(--blue);display:block;margin-bottom:12px">🎨 Temas da Loja</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px" id="themesGrid"></div>
+        </div>
         <div class="settings-grid">
           <div class="field full">
             <label>Logo da Loja</label>
@@ -503,7 +508,59 @@ renderStore();
 renderAdminList();
 loadSettingsForm();
 
-function saveState(){
+const themes={
+  lis:{name:'💙 Azul Lís',color:'#4A7FB5',bg:'#ffffff',text:'#333333',hero:'linear-gradient(135deg,#4A7FB5 0%,#2d5f8a 100%)'},
+  minimal:{name:'🤍 Minimalista',color:'#2d2d2d',bg:'#ffffff',text:'#1a1a1a',hero:'linear-gradient(135deg,#2d2d2d 0%,#555 100%)'},
+  dark:{name:'✨ Dark Elegante',color:'#c9a84c',bg:'#1a1a2e',text:'#e0e0e0',hero:'linear-gradient(135deg,#16213e 0%,#0f3460 100%)'},
+  pink:{name:'🌸 Rosa Delicado',color:'#d4698a',bg:'#fff5f7',text:'#4a2030',hero:'linear-gradient(135deg,#d4698a 0%,#b5485f 100%)'},
+  purple:{name:'💜 Roxo Místico',color:'#7c5cbf',bg:'#f8f5ff',text:'#2d1b69',hero:'linear-gradient(135deg,#7c5cbf 0%,#5a3d9a 100%)'},
+  green:{name:'🌿 Verde Natureza',color:'#5a8a6a',bg:'#f5f9f6',text:'#1e3a2a',hero:'linear-gradient(135deg,#5a8a6a 0%,#3d6b4f 100%)'},
+};
+
+function renderThemes(){
+  const grid=document.getElementById('themesGrid');
+  if(!grid)return;
+  const cur=settings.themeId||'lis';
+  grid.innerHTML=Object.entries(themes).map(([id,t])=>`
+    <div onclick="applyTheme('${id}')" style="border:3px solid ${id===cur?t.color:'#e0e0e0'};border-radius:14px;padding:12px;cursor:pointer;text-align:center;background:${t.bg};transition:.2s">
+      <div style="width:100%;height:32px;border-radius:8px;background:${t.hero};margin-bottom:8px"></div>
+      <div style="width:60%;height:8px;border-radius:4px;background:${t.color};margin:0 auto 6px"></div>
+      <div style="font-size:.78rem;font-weight:700;color:${t.text}">${t.name}</div>
+      ${id===cur?`<div style="font-size:.7rem;color:${t.color};font-weight:700;margin-top:4px">✅ Ativo</div>`:''}
+    </div>`).join('');
+}
+
+function applyTheme(id){
+  const t=themes[id];
+  if(!t)return;
+  settings.themeId=id;
+  settings.color=t.color;
+  // apply CSS vars
+  document.documentElement.style.setProperty('--blue',t.color);
+  const hsl=hexToHsl(t.color);
+  document.documentElement.style.setProperty('--bd',`hsl(${hsl.h},${hsl.s}%,${Math.max(hsl.l-10,0)}%)`);
+  document.documentElement.style.setProperty('--bl',`hsl(${hsl.h},${Math.max(hsl.s-20,0)}%,${Math.min(hsl.l+30,97)}%)`);
+  document.documentElement.style.setProperty('--blighter',`hsl(${hsl.h},${Math.max(hsl.s-30,0)}%,${Math.min(hsl.l+35,99)}%)`);
+  document.documentElement.style.setProperty('--white',t.bg);
+  document.documentElement.style.setProperty('--tx',t.text);
+  // hero gradient
+  const hero=document.getElementById('heroSection');
+  if(hero)hero.style.background=t.hero;
+  // dark mode body
+  document.body.style.background=t.bg;
+  document.body.style.color=t.text;
+  // update header bg
+  document.querySelector('header').style.background=t.bg;
+  saveState();
+  renderThemes();
+  applySettings();
+  showToast('🎨 Tema '+t.name+' aplicado!');
+}
+
+// apply saved theme on load
+if(settings.themeId && themes[settings.themeId]){
+  setTimeout(()=>applyTheme(settings.themeId),100);
+}
   localStorage.setItem('lis_products', JSON.stringify(products));
   localStorage.setItem('lis_settings', JSON.stringify(settings));
   localStorage.setItem('lis_nextId', String(nextId));
